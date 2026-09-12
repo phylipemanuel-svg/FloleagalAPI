@@ -1,0 +1,9 @@
+{
+  "name": "hartwell-rowe-mock-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mock booking API for the DEMO-HR Hartwell & Rowe Solicitors Telnyx voice agent demo.",
+  "engines": {
+    "node": ">=18"
+  }
+}
