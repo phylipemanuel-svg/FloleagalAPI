@@ -83,6 +83,12 @@ function handleAvailability(req, res) {
     return sendJson(res, 400, {
       error: "invalid_practice_area",
       message: `practice_area is required and must be one of: ${PRACTICE_AREAS.join(", ")}`,
+      debug: {
+        content_type: req.headers?.["content-type"] || null,
+        body_type: typeof req.body,
+        body_raw: req.body,
+        extracted_args: args,
+      },
     });
   }
 
