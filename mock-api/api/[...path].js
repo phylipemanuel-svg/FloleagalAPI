@@ -36,11 +36,43 @@ function sendJson(res, status, data) {
   res.status(status).json(data);
 }
 
+function tryParseJson(value) {
+  if (typeof value !== "string") return value;
+  try {
+    return JSON.parse(value);
+  } catch (err) {
+    return value;
+  }
+}
+
 function getArgs(body) {
-  // Defensive extraction — the exact JSON shape Telnyx's webhook tool sends
-  // has not been confirmed against live traffic yet for THIS assistant.
-  // Accept the most likely shapes until verified via Test Assistant Tool.
-  return body?.arguments || body?.parameters || body?.input || body || {};
+  // Confirmed from a real live call's conversation log: the model produces
+  // its tool-call arguments as an OpenAI-style JSON-ENCODED STRING (e.g.
+  // `"{\"practice_area\":\"residential_conveyancing\"}"`), not a parsed
+  // object. Telnyx's webhook delivery likely forwards that same string
+  // through (under `arguments`, or possibly nested under
+  // `function.arguments`/`tool_call.function.arguments`, mirroring the
+  // OpenAI tool-calling shape) rather than a pre-parsed object — this was
+  // the root cause of a real production bug where a well-formed
+  // `practice_area` value was rejected as missing. Handle every level
+  // defensively: check several likely locations, and JSON.parse() any of
+  // them that come through as a string instead of an object.
+  const candidates = [
+    body?.arguments,
+    body?.parameters,
+    body?.input,
+    body?.function?.arguments,
+    body?.tool_call?.function?.arguments,
+    body,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = tryParseJson(candidate);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed;
+    }
+  }
+  return {};
 }
 
 function handleAvailability(req, res) {
